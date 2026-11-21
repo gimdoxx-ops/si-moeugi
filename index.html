@@ -80,7 +80,8 @@ header{text-align:center; padding-top:8px}
 /* ── 편지지: 제목·시인·본문만 편지지 그림(letter-*.webp) 위에 ──
    그림을 위·가운데·아래 세 조각으로 나눴어요.
    위(찢어진 윗가장자리)와 아래(깃펜·잉크병)는 원래 비율 그대로, 가운데만 시 길이만큼 이어 붙여서 찌그러지지 않아요. */
-.letter{position:relative; margin:24px -12px 0; container-type:inline-size}
+.letter{position:relative; margin:24px -12px 0}
+/* 여백은 모두 '편지지 폭에 대한 %'로 적었어요 (padding·margin의 %는 폭 기준이라 어느 브라우저에서나 같아요) */
 .letter-bg{
   position:absolute; inset:0; display:flex; flex-direction:column; pointer-events:none;
   filter:var(--letter-img) drop-shadow(0 6px 10px rgba(40,30,20,.14));
@@ -88,20 +89,22 @@ header{text-align:center; padding-top:8px}
 .letter-bg i{display:block; flex:none; background-repeat:no-repeat; background-size:100% 100%}
 .lt-top{aspect-ratio:1111/213; background-image:url("letter-top.webp")}
 .letter-bg .lt-mid{flex:1 1 0; min-height:0; background:url("letter-mid.webp") 0 0/100% auto repeat-y}
-.lt-bot{aspect-ratio:1111/329; margin-top:-5.4cqw; background-image:url("letter-bottom.webp")}   /* 가운데와 살짝 겹쳐 이음매가 안 보이게 */
+.lt-bot{aspect-ratio:1111/329; margin-top:-5.4%; background-image:url("letter-bottom.webp")}   /* 가운데와 살짝 겹쳐 이음매가 안 보이게 */
 .poem{
   position:relative; color:var(--letter-ink);
-  padding:14cqw 11.5cqw 21cqw;      /* 이중 테두리 안쪽, 깃펜·잉크병 위까지만 글 */
-  min-height:44cqw;                 /* 아주 짧은 시도 위·아래 조각이 겹치지 않게 */
+  padding:14% 11.5% 21%;            /* 이중 테두리 안쪽, 깃펜·잉크병 위까지만 글 */
 }
+.poem::before{content:""; display:block; float:left; padding-top:12%}   /* 아주 짧은 시도 위·아래 조각이 겹치지 않게(최소 높이) */
+.poem::after{content:""; display:block; clear:both}
 .poem .from{color:var(--letter-soft)}
-.head{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:0 0 26px}
-#title{font-size:clamp(1.55rem,6.4vw,2rem); line-height:1.35; margin:0; font-weight:700; letter-spacing:.02em}
+/* 제목·시인 영역: 가로 줄 없음, 제목 → 시인 → 본문 사이 여백 넉넉히 */
+.head{margin:0 0 30px; background:none}
+#title{font-size:clamp(1.45rem,6vw,1.9rem); line-height:1.45; margin:0; font-weight:700; letter-spacing:.02em; word-break:keep-all; overflow-wrap:anywhere}
 #title:focus{outline:none}
-.author{color:var(--letter-soft); font-size:.98rem}
+.author{display:block; margin-top:10px; color:var(--letter-soft); font-size:.98rem; line-height:1.5}
 .body{
   font-size:clamp(1rem,4vw,1.12rem); line-height:2; white-space:pre-line; margin:0;
-  /* 아주 옅은 가로 줄: 글줄마다 한 줄씩 (줄 간격 2em에 맞춤) */
+  /* 아주 옅은 가로 줄: 본문에만, 글줄마다 한 줄씩 (줄 간격 2em에 맞춤) */
   background:repeating-linear-gradient(to bottom, transparent 0 calc(2em - 1px), var(--rule) calc(2em - 1px) 2em);
 }
 /* 주머니 속 한마디: 편지지 바로 아래, 한지 바탕 위에 작은 글씨 + 왼쪽 얇은 붉은 선 */
