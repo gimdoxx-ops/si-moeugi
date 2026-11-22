@@ -234,6 +234,7 @@ html:not(.opened) #content{display:none}
   position:absolute; inset:0; background:var(--pouch-photo) center/100% 100% no-repeat;
   filter:var(--photo); transform-origin:50% 100%;
 }
+.ground{pointer-events:none}   /* 주머니 아래 그림자(버튼 밖으로 살짝 삐져나와요)는 누름을 받지 않아요 */
 .ground{position:absolute; z-index:0; left:6%; right:6%; bottom:-4%; height:9%; background:radial-gradient(closest-side, var(--shadow), transparent)}
 .gate-text{margin-top:26px}
 .gate-q{margin:0; font-size:clamp(1.1rem,4.6vw,1.3rem); font-weight:700; letter-spacing:.02em}
@@ -248,11 +249,13 @@ html:not(.opened) #content{display:none}
   .gate{animation:set .45s ease-out}
   .gate.fade{animation:none; transition:opacity .5s ease}
   .pouch-btn{transition:transform .3s ease}
-  .pouch-btn:hover,.pouch-btn:focus-visible{transform:translateY(-3px)}
+  .pouch-btn:focus-visible{transform:translateY(-3px)}
   /* 주머니가 숨 쉬듯 아주 천천히, 아주 살짝 (약 4.5초에 한 번) */
   .pouch-wrap{transform-origin:50% 100%; animation:breathe 4.5s ease-in-out infinite; transition:transform .35s ease-out}
   .open .pouch-wrap{animation:none}
   @keyframes breathe{50%{transform:scale(1.02,1.015)}}
+  /* 마우스가 있는 기기에서만 올렸을 때 살짝 떠올라요 (아이폰은 첫 누름이 '올림'으로 먹히지 않게) */
+  @media (hover:hover){ .pouch-btn:hover{transform:translateY(-3px)} }
   .rising .letter{animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
   .rising .bar,.rising .note,.rising .tomorrow{animation:set .8s ease-out both}
   @keyframes rise{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
@@ -278,7 +281,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
 <!-- 가죽 주머니 (하루 첫 방문 때만 닫혀 있어요) -->
 <div class="gate" id="gate">
   <div class="stage">
-    <button class="pouch-btn" id="pouchBtn" aria-label="주머니를 열어 오늘의 시 꺼내기">
+    <button type="button" class="pouch-btn" id="pouchBtn" aria-label="주머니를 열어 오늘의 시 꺼내기">
       <div class="pouch-wrap">
         <div class="ground" aria-hidden="true"></div>
         <div class="photo" aria-hidden="true"></div>
@@ -365,7 +368,8 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
   </footer>
 </main>
 <!-- 시 목록은 poems.js 파일에 따로 있어요 (새 시 추가·수정은 그 파일에서) -->
-<script src="poems.js"></script>
+<!-- ?v= 뒤 숫자: 폰(특히 아이폰 Safari)이 예전 poems.js를 붙잡고 있지 않게, index.html과 poems.js를 함께 고칠 때 바꿔요 -->
+<script src="poems.js?v=20261122b"></script>
 <script>
 // poems.js를 못 읽었으면(파일이 없거나 쉼표·따옴표가 빠졌을 때) 안내 문구를 보여줘요
 if (typeof POEMS === "undefined" || !Array.isArray(POEMS) || POEMS.length === 0) {
@@ -414,17 +418,26 @@ function setPoemText(el, text, opts){
   String(text).split("\n").forEach(line => {
     const s = document.createElement("span"); s.className = "ln"; s.textContent = line; el.appendChild(s);
   });
-  fitPoemText(el);
+  safeFit(el);
 }
 // 글자 크기 맞추기(fitPoemText)는 poems.js 맨 아래에 있어요 (preview.html과 똑같이 쓰려고)
+// 혹시 오류가 나거나(예: 예전 poems.js가 남아 있을 때) 없어도, 원래 크기 그대로 두고 편지지는 열려요
+function safeFit(el){
+  try { if (typeof fitPoemText === "function") fitPoemText(el); }
+  catch(e){ el.style.removeProperty("--fs"); }
+}
 // 화면 폭이 바뀌거나(폰을 돌릴 때), 숨어 있던 편지지가 보이게 되면 다시 맞춰요
-const fitWatch = new ResizeObserver(es => es.forEach(e => {
-  const el = e.target;
-  if (el.clientWidth && String(el.clientWidth) !== el.dataset.fitW) fitPoemText(el);
-}));
-["text", "dvText"].forEach(id => fitWatch.observe($(id)));
-// 나눔명조 글꼴이 늦게 도착하면 글자 폭이 달라지니 한 번 더 맞춰요
-if (document.fonts) document.fonts.ready.then(() => ["text", "dvText"].forEach(id => fitPoemText($(id))));
+try {
+  if (window.ResizeObserver) {
+    const fitWatch = new ResizeObserver(es => es.forEach(e => {
+      const el = e.target;
+      if (el.clientWidth && String(el.clientWidth) !== el.dataset.fitW) safeFit(el);
+    }));
+    ["text", "dvText"].forEach(id => fitWatch.observe($(id)));
+  }
+  // 나눔명조 글꼴이 늦게 도착하면 글자 폭이 달라지니 한 번 더 맞춰요
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ["text", "dvText"].forEach(id => safeFit($(id))));
+} catch(e){}
 
 
 // ── 내 생각: 날짜마다 따로 이 브라우저에 저장돼요 ──
@@ -655,8 +668,10 @@ function renderSaved(){
   });
 }
 
-render();
-renderCal();
+// 처음 그리기: 어느 한 곳에서 오류가 나도 아래의 주머니 버튼 연결까지는 꼭 이어지게 감싸요
+function safely(fn){ try { fn(); } catch(e){ if (window.console) console.error(e); } }
+safely(render);
+safely(renderCal);
 
 // ── 가죽 주머니: 들어올 때마다 닫혀 있어요 (안에 든 시는 날짜로 정해져서 같은 날엔 늘 같은 시) ──
 const html = document.documentElement, gate = $("gate");
@@ -666,17 +681,18 @@ let opening = false;
 
 // 주머니 닫기: 오늘의 시를 주머니에 넣고 첫 화면(주머니)으로 돌아가요
 function showGate(){
-  current = todayIdx; render();
+  current = todayIdx; safely(render);
   gate.className = "gate";
   html.classList.remove("opened", "rising");
 }
 
 // 주머니 열림 완료: 주머니는 사라지고 시가 보여요
+// 편지지를 먼저 열고(opened) 나서 그려요 → 그리다가 오류가 나도 편지지는 열려 있어요
 function finishGate(){
-  current = todayIdx; render();
   html.classList.add("opened");
   gate.className = "gate"; opening = false;
-  $("title").setAttribute("tabindex", "-1"); $("title").focus({preventScroll:true});
+  current = todayIdx; safely(render);
+  safely(() => { $("title").setAttribute("tabindex", "-1"); $("title").focus({preventScroll:true}); });
 }
 
 // 주머니를 누르면: 입구가 살짝 열림 → 주머니가 천천히 흐려짐 → 그 자리에 편지지가 스르륵 떠오름 (약 1.4초)
