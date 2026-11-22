@@ -590,7 +590,10 @@ function renderTomorrow(){
   box.textContent = "";
   if (peeked) {
     const s = document.createElement("span"); s.className = "tm-peek";
-    s.textContent = "내일 주머니에는 「" + POEMS[tomorrowIdx].title + "」이 들어 있어요.";
+    const t = POEMS[tomorrowIdx].title, c = t.trim().slice(-1).charCodeAt(0) - 0xAC00;
+    // 제목 끝 글자에 받침이 있으면 "이", 없으면 "가", 한글이 아닌 글자로 끝나면 "이/가"
+    const josa = c >= 0 && c <= 11171 ? (c % 28 ? "이" : "가") : "이/가";
+    s.textContent = "내일 주머니에는 「" + t + "」" + josa + " 들어 있어요.";
     box.appendChild(s);
   } else {
     const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "내일 시 제목 살짝 보기";
