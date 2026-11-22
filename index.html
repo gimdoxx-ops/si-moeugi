@@ -65,8 +65,6 @@ header{text-align:center; padding-top:8px}
 .memo > *,.diary > *{box-sizing:border-box}   /* 접었다 펴는 상자 안에서도 글 칸이 오른쪽으로 삐져나오지 않게 */
 .memo summary{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 2px; color:var(--soft); font-size:.92rem; cursor:pointer; list-style:none}
 .memo summary::-webkit-details-marker{display:none}
-.memo summary::before{content:"+"; display:inline-block; width:1em; text-align:center}
-.memo[open] summary::before{content:"−"}
 .memo summary:hover{color:var(--ink)}
 .memo summary:focus-visible{outline:2px solid var(--seal); outline-offset:2px}
 .memo textarea{
@@ -153,10 +151,12 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 .diary{margin-top:40px; border-top:1px solid var(--line); padding-top:6px}
 .diary > summary{display:flex; align-items:center; gap:6px; min-height:48px; color:var(--soft); font-size:.98rem; cursor:pointer; list-style:none}
 .diary > summary::-webkit-details-marker{display:none}
-.diary > summary::before{content:"+"; display:inline-block; width:1em; text-align:center}
-.diary[open] > summary::before{content:"−"}
 .diary > summary:hover{color:var(--ink)}
 .diary > summary:focus-visible{outline:2px solid var(--seal); outline-offset:2px}
+/* 제목 오른쪽 작은 [접기]/[펼치기] (JS가 글자를 바꿔요). 제목 줄 어디를 눌러도 접히고 펼쳐져요 */
+.fold{margin-left:10px; color:var(--soft); opacity:.85; font-size:.78rem; text-decoration:underline; text-underline-offset:3px}
+summary:hover .fold{color:var(--ink)}
+.memo summary,.diary > summary{-webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none}
 .cal{max-width:360px; margin:4px auto 0}
 .cal-head{display:flex; align-items:center; justify-content:space-between}
 .cal-month{margin:0; font-size:1rem; letter-spacing:.08em}
@@ -198,7 +198,7 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 }
 
 /* ── 위쪽 '주머니 닫기' 버튼 ── */
-.bar{display:flex; justify-content:flex-end; margin:22px 0 0; padding-bottom:10px; border-bottom:1px solid var(--line)}
+.bar{display:flex; justify-content:center; margin:40px 0 0}   /* 주머니 닫기: 시 화면 맨 아래 */
 #closeBtn{font-size:.85rem; padding:6px 12px; min-height:40px; color:var(--soft)}
 #closeBtn:hover{color:var(--ink)}
 
@@ -296,7 +296,6 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
 
 <!-- 주머니에서 꺼낸 시 -->
 <div id="content">
-  <div class="bar"><button id="closeBtn">주머니 닫기</button></div>
   <!-- 편지지 한 장: 제목·시인·본문 -->
   <div class="letter" id="letter">
     <div class="letter-bg" aria-hidden="true"><i class="lt-top"></i><i class="lt-mid"></i><i class="lt-bot"></i></div>
@@ -308,23 +307,19 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
   </div>
   <!-- 주머니 속 한마디: 편지지 바로 아래 -->
   <section class="note" id="note" aria-label="주머니 속 한마디"></section>
+  <!-- 이 시를 내 주머니에 넣을까요? (상태에 따라 내용이 바뀌어요) -->
+  <section class="ask" id="ask" aria-live="polite"></section>
   <!-- 내일 시 제목만 살짝 (오늘의 시를 볼 때만 보여요. 눌러도 아무 일 없어요) -->
   <p class="tomorrow" id="tomorrow"></p>
   <!-- 내 생각 적기: 그날그날 일기처럼, 이 브라우저에 저장돼요 (오늘의 시를 볼 때만 보여요) -->
-  <details class="memo" id="memo">
-    <summary>내 생각 적기</summary>
+  <details class="memo" id="memo" open>
+    <summary><span>내 생각 적기</span><span class="fold" aria-hidden="true">접기</span></summary>
     <textarea id="memoText" rows="4" maxlength="1000" aria-label="내 생각" placeholder="이 시를 읽고 떠오른 생각을 짧게 적어 보세요"></textarea>
     <p class="memo-status" id="memoStatus" aria-live="polite"></p>
   </details>
-  <!-- 이 시를 내 주머니에 넣을까요? (상태에 따라 내용이 바뀌어요) -->
-  <section class="ask" id="ask" aria-live="polite"></section>
-  <section class="saved" id="saved" hidden>
-    내 주머니
-    <ul id="savedList"></ul>
-  </section>
-  <!-- 내 기록: 날짜별로 적은 '내 생각'을 달력으로 다시 봐요 (처음엔 접혀 있어요) -->
-  <details class="diary" id="diary">
-    <summary>내 기록</summary>
+  <!-- 내 기록: 날짜별로 적은 '내 생각'을 달력으로 다시 봐요 (처음엔 펼쳐 있어요. 접으면 이 브라우저가 기억해요) -->
+  <details class="diary" id="diary" open>
+    <summary><span>내 기록</span><span class="fold" aria-hidden="true">접기</span></summary>
     <div class="cal">
       <div class="cal-head">
         <button class="cal-nav" id="calPrev" type="button" aria-label="이전 달">‹</button>
@@ -357,6 +352,12 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
     </div>
     <p class="cal-foot">기록은 이 기기의 브라우저에만 남아요</p>
   </details>
+  <section class="saved" id="saved" hidden>
+    내 주머니
+    <ul id="savedList"></ul>
+  </section>
+  <!-- 주머니 닫기: 시 화면 맨 아래 -->
+  <div class="bar"><button id="closeBtn">주머니 닫기</button></div>
 </div>
   <!-- 맨 아래 짧은 안내 -->
   <footer class="site-foot">
@@ -489,10 +490,26 @@ function showMemo(){
   if (!isToday) return;
   const t = textOf(loadDiary()[todayKey]);
   $("memoText").value = t;
-  $("memo").open = t !== "";                              // 적어 둔 글이 있으면 펼친 채로, 없으면 접힌 채로
+  $("memo").open = !isFolded("memo");                     // 처음엔 펼침, 접어 두었으면 접힌 채로 (이 브라우저가 기억해요)
   $("memoStatus").className = "memo-status"; $("memoStatus").textContent = "";
 }
 autosave($("memoText"), $("memoStatus"), () => t => saveDay(todayKey, t, snap(POEMS[todayIdx])));
+
+// ── 접기·펼치기: '내 생각 적기'와 '내 기록' ──
+// 처음 온 사람은 펼침. 접으면 이 브라우저에 기억해서 다음에 와도 접힌 채로 둬요. (저장이 막혀 있어도 접기·펼치기는 돼요)
+function loadFolds(){ try { const v = JSON.parse(localStorage.getItem("folds") || "{}"); return v && typeof v === "object" ? v : {}; } catch(e){ return {}; } }
+const isFolded = id => loadFolds()[id] === true;
+["memo", "diary"].forEach(id => {
+  const d = $(id), label = d.querySelector(".fold");
+  const sync = () => { label.textContent = d.open ? "접기" : "펼치기"; };
+  d.open = !isFolded(id);
+  sync();
+  d.addEventListener("toggle", () => {
+    sync();
+    const f = loadFolds(); if (d.open) delete f[id]; else f[id] = true;
+    try { localStorage.setItem("folds", JSON.stringify(f)); } catch(e){}
+  });
+});
 
 // ── 내 기록: 한 달 달력 ──
 const cal = { y: today.getFullYear(), m: today.getMonth() };   // 지금 보고 있는 달
