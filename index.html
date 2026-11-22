@@ -27,6 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+<!-- 첫 화면 주머니 옆 "Click" 손글씨: 이 다섯 글자만 받아요 -->
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&text=Click&display=swap" rel="stylesheet">
 <style>
 :root{
   --paper:#e8e6dc; --paper2:#dedbd0; --ink:#242a33; --soft:#5d6470; --line:#b9b6a8; --btn-line:var(--line); --seal:#a63a32;
@@ -147,7 +149,7 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 .site-foot li{margin:0 0 4px}
 .site-foot a{color:inherit}
 .saved{margin-top:40px; border-top:1px solid var(--line); padding-top:20px; color:var(--soft); font-size:.98rem}
-.saved ul{list-style:none; padding:0; margin:8px 0 0}
+.saved ul{list-style:none; padding:0; margin:12px 0 0}
 .saved li button{border:0; padding:4px 0; min-height:36px; color:var(--ink); text-align:left}
 .saved li button span{color:var(--soft)}
 /* ── 내 기록: 날짜별로 적은 '내 생각'을 다시 보는 작은 달력 (처음엔 접혀 있어요) ── */
@@ -218,7 +220,7 @@ summary:hover .fold{color:var(--ink)}
 details.memo{position:relative}
 details.memo > .memo-status{position:absolute; top:0; right:0; margin:0; min-height:0; line-height:44px}   /* "저장됐어요"는 제목 줄 오른쪽 끝에 */
 /* 내 생각 적기·내 기록 제목 왼쪽: 추신과 같은 붉은 세로 바 (두께 2px, 길이는 제목 글자 높이만큼) */
-.memo summary > span:first-child, .diary > summary > span:first-child{display:inline-block; border-left:2px solid var(--seal); padding-left:16px; line-height:1.15}
+.memo summary > span:first-child, .diary > summary > span:first-child, .saved-h{display:inline-block; border-left:2px solid var(--seal); padding-left:16px; line-height:1.15}
 #closeBtn{font-size:.85rem; padding:6px 12px; min-height:40px; color:var(--soft)}
 #closeBtn:hover{color:var(--ink)}
 
@@ -243,7 +245,30 @@ details.memo > .memo-status{position:absolute; top:0; right:0; margin:0; min-hei
 html:not(.opened) #content{display:none}
 .gate{display:flex; justify-content:center; padding:4px 0 32px}
 .stage{display:flex; flex-direction:column; align-items:center; text-align:center}
-.pouch-btn{border:0; padding:0; background:none; min-height:0; border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.pouch-btn{position:relative; border:0; padding:0; background:none; min-height:0; border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+/* 주머니 양옆 작은 "Click" 손글씨 (연한 먹색). 누름은 받지 않아요 → 주머니 누르기를 막지 않아요
+   PC: 주머니에 커서를 올리면 살짝 떠오르며 나타남 / 폰: 2초 뒤 은은하게 나타나 숨쉬기(4.5초)에 맞춰 옅어졌다 진해짐
+   주머니를 누르면 바로 사라짐 / 움직임 줄이기: 움직임 없이 그냥 보임 */
+.click{position:absolute; top:40%; z-index:1; pointer-events:none; -webkit-user-select:none; user-select:none;
+  font-family:"Nanum Pen Script","Segoe Print","Bradley Hand",cursive; font-size:1.35rem; line-height:1; letter-spacing:.02em;
+  color:var(--ink); opacity:0; white-space:nowrap}
+.click-l{right:100%; margin-right:8px; --tilt:-12deg; transform:rotate(var(--tilt))}
+.click-r{left:100%; margin-left:8px; --tilt:12deg; transform:rotate(var(--tilt))}
+.open .click{opacity:0!important; animation:none!important; transition:none!important}   /* 누르면 바로 사라져요 */
+@media (prefers-reduced-motion:reduce){ .click{opacity:.5} }                              /* 움직임 없이 그냥 보여요 */
+@media (prefers-reduced-motion:no-preference){
+  .click{transform:translateY(6px) rotate(var(--tilt)); transition:opacity .35s ease, transform .35s ease}
+  /* PC(마우스): 올리면 나타나고, 떼면 사라져요 */
+  @media (hover:hover) and (pointer:fine){
+    .pouch-btn:hover .click{opacity:.5; transform:translateY(0) rotate(var(--tilt))}
+  }
+  /* 폰(터치): 2초 뒤 은은하게 → 숨쉬기와 같은 4.5초 박자로 옅어졌다 진해졌다 */
+  @media (hover:none), (pointer:coarse){
+    .click{animation:clickIn 1s ease-out 2s both, clickPulse 4.5s ease-in-out 4.5s infinite}
+  }
+  @keyframes clickIn{from{opacity:0; transform:translateY(6px) rotate(var(--tilt))} to{opacity:.5; transform:translateY(0) rotate(var(--tilt))}}
+  @keyframes clickPulse{0%,100%{opacity:.5; transform:rotate(var(--tilt))} 50%{opacity:.22; transform:rotate(var(--tilt))}}
+}
 .pouch-btn:focus-visible{outline:2px solid var(--seal); outline-offset:8px}
 .pouch-wrap{
   --w:min(50vw,200px);
@@ -302,6 +327,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
 <div class="gate" id="gate">
   <div class="stage">
     <button type="button" class="pouch-btn" id="pouchBtn" aria-label="주머니를 열어 오늘의 시 꺼내기">
+      <span class="click click-l" aria-hidden="true">Click</span><span class="click click-r" aria-hidden="true">Click</span>
       <div class="pouch-wrap">
         <div class="ground" aria-hidden="true"></div>
         <div class="photo" aria-hidden="true"></div>
@@ -373,7 +399,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
     <p class="cal-foot">기록은 이 기기의 브라우저에만 남아요</p>
   </details>
   <section class="saved" id="saved" hidden>
-    내 주머니
+    <span class="saved-h">내 주머니</span>
     <ul id="savedList"></ul>
   </section>
   <!-- 주머니 닫기: 시 화면 맨 아래 -->
