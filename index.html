@@ -175,6 +175,9 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 .dv-date{margin:0; text-align:center; color:var(--soft); font-size:.88rem; letter-spacing:.04em}
 .dv .letter{margin-top:8px}
 .tomorrow{margin:20px 0 0; color:var(--soft); opacity:.7; font-size:.8rem; letter-spacing:.03em}   /* 내일 시 제목: 작고 연하게 */
+.tomorrow button.link{font-size:inherit; letter-spacing:inherit; color:inherit; padding:4px 0}   /* [내일 시 제목 살짝 보기]: 작은 글씨 버튼 */
+.tomorrow button.link:hover{color:var(--ink)}
+.tm-peek{display:inline-flex; align-items:center; min-height:36px}   /* 버튼과 같은 높이라 나타날 때 아래 글이 들썩이지 않아요 */
 .dv-memo label{display:block; color:var(--soft); font-size:.92rem}
 .old{margin-top:22px; color:var(--soft); font-size:.92rem}
 .old-h{margin:0}
@@ -184,6 +187,7 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 @media (prefers-reduced-motion:no-preference){
   .poem.in{animation:set .9s ease-out both}
   .ask > *{animation:set .4s ease-out both}           /* 질문 자리가 바뀔 때 살며시 */
+  .tm-peek{animation:set 1.2s ease-out both}          /* 내일 시 제목이 은은하게 나타나요 */
   @keyframes set{from{opacity:0}to{opacity:1}}
 }
 
@@ -570,13 +574,29 @@ function render(){
   setPoemText($("text"), p.text);
   $("note").innerHTML = "<h2>주머니 속 한마디</h2>" + p.note.map(t => "<p>" + t + "</p>").join("");
   // 내일 시는 제목만 살짝: 오늘의 시를 볼 때만 (내 주머니에서 다른 시를 꺼내 볼 때는 숨겨요)
-  $("tomorrow").textContent = "내일 주머니에는: " + POEMS[tomorrowIdx].title;
+  renderTomorrow();
   $("tomorrow").hidden = current !== todayIdx;
   const el = $("poem"); el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   justAdded = null;
   showMemo();
   renderAsk();
   renderSaved();
+}
+
+// 내일 시 제목: 처음엔 숨기고 작은 [내일 시 제목 살짝 보기] 버튼만. 누른 사람에게만 제목을 보여줘요 (시인·본문·한마디는 안 보여요)
+let peeked = false;                   // 이번에 머무는 동안 한 번 보면 계속 보여요
+function renderTomorrow(){
+  const box = $("tomorrow");
+  box.textContent = "";
+  if (peeked) {
+    const s = document.createElement("span"); s.className = "tm-peek";
+    s.textContent = "내일 주머니에는 「" + POEMS[tomorrowIdx].title + "」이 들어 있어요.";
+    box.appendChild(s);
+  } else {
+    const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "내일 시 제목 살짝 보기";
+    b.onclick = () => { peeked = true; renderTomorrow(); box.setAttribute("tabindex", "-1"); box.focus({preventScroll:true}); };
+    box.appendChild(b);
+  }
 }
 
 // 시 아래 '내 주머니에 넣을까요?' 자리 — 네 가지 모습 중 하나를 보여줘요
