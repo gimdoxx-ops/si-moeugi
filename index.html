@@ -60,7 +60,7 @@ header{text-align:center; padding-top:8px}
 .date{margin:8px 0 0; color:var(--soft); font-size:clamp(1.1rem,4.8vw,1.3rem); letter-spacing:.04em}
 .date.wkd{color:var(--seal)}   /* 토·일요일: 추신 왼쪽 선과 같은 차분한 붉은색 */
 .mood{margin:4px 0 0; color:var(--soft); opacity:.75; font-size:.88rem; line-height:1.7; letter-spacing:.04em; word-break:keep-all}   /* 날짜 아래 안내 두 줄 */
-.mood .ul{text-decoration:underline; text-decoration-color:var(--ul); text-decoration-thickness:1px; text-underline-offset:5px}   /* "하루에 한 편,"과 "새로운 시"에 따로 은은한 밑줄 (사이 띄어쓰기에는 없음) */
+.mood .ul{text-decoration:underline; text-decoration-color:var(--ul); text-decoration-thickness:1px; text-underline-offset:5px}   /* "하루에 한 편"과 "새로운 시"에만 은은한 밑줄 (쉼표·띄어쓰기에는 없음) */
 .opened .mood{display:none}                     /* 편지지를 연 뒤(시 읽는 화면)에는 숨기고, 주머니 화면에서만 보여요 */
 /* ── 내 생각 적기 (평소엔 접혀 있어요) ── */
 .memo{margin-top:16px}
@@ -295,7 +295,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
     <h1 class="site"><a href="#" id="home" class="home" title="처음 화면으로"><img src="title.webp" alt="시 주머니 (pocket poem)" width="1000" height="329" decoding="async"></a></h1>
     <p class="date" id="date"></p>
     <!-- 날짜 아래 안내 두 줄 (문장을 바꾸고 싶으면 여기 글자만 고치면 돼요) -->
-    <p class="mood" id="mood"><span class="ul">하루에 한 편,</span> <span class="ul">새로운 시</span>를 꺼내보세요.<br>마음에 닿은 시는 주머니에 넣어두세요.</p>
+    <p class="mood" id="mood"><span class="ul">하루에 한 편</span>, <span class="ul">새로운 시</span>를 꺼내보세요.<br>마음에 닿은 시는 주머니에 넣어두세요.</p>
   </header>
 
 <!-- 가죽 주머니 (하루 첫 방문 때만 닫혀 있어요) -->
