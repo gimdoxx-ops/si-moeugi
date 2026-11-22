@@ -119,9 +119,14 @@ header{text-align:center; padding-top:8px}
 }
 /* [산문시]: 들여쓰기 없이 보통 문단처럼 양쪽을 반듯하게, 가로 줄은 글줄마다 (2em 간격) */
 .body.prose .ln{
-  padding-left:0; text-indent:0; text-align:justify;
-  word-break:normal;   /* 책처럼 글자 사이에서도 줄을 바꿔야 낱말 사이가 넓게 벌어지지 않아요 */
+  padding-left:0; text-indent:0; text-align:left; word-break:keep-all;
   background:repeating-linear-gradient(to bottom, transparent 0 calc(2em - 1px), var(--rule) calc(2em - 1px) 2em);
+}
+/* 연 사이 빈 줄: 높이(2em)는 그대로, 가로 줄은 긋지 않아요 */
+.body .ln:empty{background:none}
+/* 폰 화면: 편지지 좌우 안쪽 여백을 줄여 글 폭을 30px쯤 넓혀요 (안쪽 이중 테두리 선에는 닿지 않게) */
+@media (max-width:480px){
+  .poem{padding-left:7.3%; padding-right:7.3%}
 }
 /* 주머니 속 한마디: 편지지 바로 아래, 한지 바탕 위에 작은 글씨 + 왼쪽 얇은 붉은 선 */
 .note{margin-top:22px; padding:2px 0 0 16px; border-left:2px solid var(--seal); color:var(--soft); font-size:.92rem; line-height:1.85}
