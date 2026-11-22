@@ -58,7 +58,7 @@ header{text-align:center; padding-top:8px}
 .home img{display:block; width:min(78vw,300px); height:auto; filter:var(--title-img)}
 .from{margin:0 0 6px; color:var(--soft); font-size:.88rem; letter-spacing:.04em}
 .date{margin:8px 0 0; color:var(--soft); font-size:clamp(1.1rem,4.8vw,1.3rem); letter-spacing:.04em}
-.mood{margin:4px 0 0; min-height:1.6em; color:var(--soft); opacity:.75; font-size:.88rem; letter-spacing:.04em}   /* 시간대에 따라 바뀌는 한 줄 */
+.mood{margin:4px 0 0; color:var(--soft); opacity:.75; font-size:.88rem; line-height:1.7; letter-spacing:.04em; word-break:keep-all}   /* 날짜 아래 안내 두 줄 */
 .opened .mood{display:none}                     /* 편지지를 연 뒤(시 읽는 화면)에는 숨기고, 주머니 화면에서만 보여요 */
 /* ── 내 생각 적기 (평소엔 접혀 있어요) ── */
 .memo{margin-top:16px}
@@ -271,7 +271,8 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
   <header>
     <h1 class="site"><a href="#" id="home" class="home" title="처음 화면으로"><img src="title.webp" alt="시 주머니 (pocket poem)" width="1000" height="329" decoding="async"></a></h1>
     <p class="date" id="date"></p>
-    <p class="mood" id="mood"></p>
+    <!-- 날짜 아래 안내 두 줄 (문장을 바꾸고 싶으면 여기 글자만 고치면 돼요) -->
+    <p class="mood" id="mood">하루에 한 편, 새로운 시를 꺼내보세요.<br>마음에 닿은 시는 주머니에 넣어두세요.</p>
   </header>
 
 <!-- 가죽 주머니 (하루 첫 방문 때만 닫혀 있어요) -->
@@ -425,18 +426,6 @@ const fitWatch = new ResizeObserver(es => es.forEach(e => {
 // 나눔명조 글꼴이 늦게 도착하면 글자 폭이 달라지니 한 번 더 맞춰요
 if (document.fonts) document.fonts.ready.then(() => ["text", "dvText"].forEach(id => fitPoemText($(id))));
 
-// 날짜 아래 한 줄: 지금 시간대에 맞는 문장 (문장을 바꾸고 싶으면 따옴표 안만 고치면 돼요)
-function moodNow(h){
-  if (h >= 5  && h < 7)  return "고요한 새벽이에요";
-  if (h >= 7  && h < 11) return "아침 햇살이 스며들어요";
-  if (h >= 11 && h < 17) return "한낮이 천천히 지나가요";
-  if (h >= 17 && h < 20) return "저녁이 내려앉고 있어요";
-  return "깊은 밤이에요";
-}
-function updateMood(){ $("mood").textContent = "“" + moodNow(new Date().getHours()) + "”"; }   // 문장을 따옴표로 감싸서 보여줘요
-updateMood();
-setInterval(updateMood, 60000);                         // 1분마다 살펴서, 시간대가 바뀌면 문장도 바뀌어요
-document.addEventListener("visibilitychange", () => { if (!document.hidden) updateMood(); });
 
 // ── 내 생각: 날짜마다 따로 이 브라우저에 저장돼요 ──
 // 'diary' = { "2026-11-22": { text: 적은 글, poem: 그날의 시(제목·시인·본문), saved: 저장한 때 } }
