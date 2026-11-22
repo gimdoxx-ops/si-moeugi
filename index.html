@@ -104,11 +104,17 @@ header{text-align:center; padding-top:8px}
 #title:focus{outline:none}
 .author{display:block; margin-top:10px; color:var(--letter-soft); font-size:.98rem; line-height:1.5}
 .body{
-  font-size:clamp(1rem,4vw,1.12rem); line-height:2; white-space:pre-line; margin:0;
+  font-size:clamp(1rem,4vw,1.12rem); line-height:2; margin:0;
   /* 긴 줄이 폰에서 넘칠 때 낱말 중간이 아니라 띄어쓰기 자리에서 꺾이게 (아주 긴 낱말만 예외) */
   word-break:keep-all; overflow-wrap:anywhere;
-  /* 아주 옅은 가로 줄: 본문에만, 글줄마다 한 줄씩 (줄 간격 2em에 맞춤) */
-  background:repeating-linear-gradient(to bottom, transparent 0 calc(2em - 1px), var(--rule) calc(2em - 1px) 2em);
+}
+/* 시의 한 줄 = 한 덩어리 (setPoemText가 줄마다 나눠 넣어요)
+   · 화면 폭 때문에 넘어간 부분만 살짝 들여 써요(내어쓰기) → 시인이 바꾼 줄과 구분돼요
+   · 아주 옅은 가로 줄은 덩어리 맨 아래에만 하나 (넘어간 부분에는 줄을 긋지 않아요)
+   · 덩어리 높이는 늘 2em의 배수라서, 줄은 지금처럼 글줄 간격에 딱 맞아요 */
+.body .ln{
+  display:block; min-height:2em; padding-left:1.5em; text-indent:-1.5em;
+  background:linear-gradient(var(--rule),var(--rule)) left bottom/100% 1px no-repeat;
 }
 /* 주머니 속 한마디: 편지지 바로 아래, 한지 바탕 위에 작은 글씨 + 왼쪽 얇은 붉은 선 */
 .note{margin-top:22px; padding:2px 0 0 16px; border-left:2px solid var(--seal); color:var(--soft); font-size:.92rem; line-height:1.85}
@@ -357,12 +363,10 @@ if (typeof POEMS === "undefined" || !Array.isArray(POEMS) || POEMS.length === 0)
 }
 
 const $ = id => document.getElementById(id);
-const DAY = 86400000;
 const today = new Date();
-const base = Math.floor(new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / DAY);
-const todayIdx = ((base % POEMS.length) + POEMS.length) % POEMS.length;   // 오늘의 시 (날마다 목록 순서대로 한 편)
-// 아무 날짜의 시 번호 (오늘의 시와 똑같은 방법으로 계산해요)
-const idxOf = d => { const b = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / DAY); return ((b % POEMS.length) + POEMS.length) % POEMS.length; };
+// 아무 날짜의 시 번호: 2026-11-22에 1번 시, 그 뒤로 하루에 한 편씩 (계산은 poems.js 맨 아래 poemOn)
+const idxOf = d => poemOn(d).idx;
+const todayIdx = idxOf(today);        // 오늘의 시
 const tomorrowIdx = idxOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
 let current = todayIdx;               // 지금 화면에 보이는 시 (내 주머니에서 다른 시를 꺼내 볼 수도 있어요)
 // 내 주머니: 이 브라우저에만 저장돼요. 시를 '제목|시인'으로 기억해서, poems.js에 시를 추가해도 헷갈리지 않아요.
@@ -388,6 +392,14 @@ function fmtDate(d){
   return d.getFullYear() + "." + p(d.getMonth() + 1) + "." + p(d.getDate()) + " (" + "일월화수목금토"[d.getDay()] + ")";
 }
 $("date").textContent = fmtDate(today);
+
+// 시 본문을 줄마다 한 덩어리(.ln)로 넣어요. 빈 줄은 연과 연 사이예요.
+function setPoemText(el, text){
+  el.textContent = "";
+  String(text).split("\n").forEach(line => {
+    const s = document.createElement("span"); s.className = "ln"; s.textContent = line; el.appendChild(s);
+  });
+}
 
 // 날짜 아래 한 줄: 지금 시간대에 맞는 문장 (문장을 바꾸고 싶으면 따옴표 안만 고치면 돼요)
 function moodNow(h){
@@ -498,7 +510,7 @@ function showDay(label, poem, text, save){
   $("dvDate").textContent = label;
   $("dvTitle").textContent = p.title || "(시를 찾지 못했어요)";
   $("dvAuthor").textContent = p.author || "";
-  $("dvText").textContent = p.text || "";
+  setPoemText($("dvText"), p.text || "");
   // 한마디: 저장된 시에 한마디가 없으면(예전 기록) 지금 시 목록에서 같은 시를 찾아 보여줘요
   const same = POEMS.find(q => keyOf(q) === keyOf(p));
   const note = Array.isArray(p.note) && p.note.length ? p.note : (same ? same.note : []);
@@ -555,7 +567,7 @@ function render(){
   $("from").hidden = current === todayIdx;   // 오늘의 시가 아니면 "내 주머니에서 꺼낸 시"라고 알려줘요
   $("title").textContent = p.title;
   $("author").textContent = p.author;
-  $("text").textContent = p.text;
+  setPoemText($("text"), p.text);
   $("note").innerHTML = "<h2>주머니 속 한마디</h2>" + p.note.map(t => "<p>" + t + "</p>").join("");
   // 내일 시는 제목만 살짝: 오늘의 시를 볼 때만 (내 주머니에서 다른 시를 꺼내 볼 때는 숨겨요)
   $("tomorrow").textContent = "내일 주머니에는: " + POEMS[tomorrowIdx].title;

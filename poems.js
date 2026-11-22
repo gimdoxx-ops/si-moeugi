@@ -37,14 +37,31 @@
        문단 안에서 엔터를 치면 그 자리에서 줄이 바뀌어요.
      - 줄 앞뒤의 띄어쓰기와, 칸 위아래의 빈 줄은 자동으로 정리돼요.
 
+   ■ 꼭 지켜 주세요: 새 시는 맨 뒤에만!
+     - 2026년 11월 22일에 1번 시, 23일에 2번 시 … 이렇게
+       위에서부터 하루에 한 편씩 나와요.
+     - 그래서 새 시는 꼭 목록 맨 뒤(맨 마지막 시 아래)에만 붙여 주세요.
+     - 시의 순서를 바꾸거나, 중간에 있는 시를 지우지 마세요.
+       그러면 이미 지나간 날의 시까지 바뀌어 버려요.
+       (오타처럼 시 안의 글자를 고치는 건 괜찮아요)
+
    ■ 시를 추가하는 법
      1) 아래 목록에서 시 한 편(시` 부터 ` 까지)을 통째로 복사해요.
      2) 맨 마지막 시의 ` 다음 줄에 붙여 넣어요.
-        (다른 시들 사이에 넣어도 돼요. 위에 있을수록 먼저 나와요)
      3) 네 칸의 내용을 새 시로 바꿔요.
      시와 시 사이에 쉼표는 필요 없어요.
 
-   ■ 시를 빼는 법: 그 시를 시` 부터 ` 까지 통째로 지우면 돼요.
+   ■ 시가 다 떨어지면
+     - 남은 시가 7편 이하가 되면 preview.html 맨 위에 알려 줘요.
+       그 전에 새 시를 맨 뒤에 붙여 두면 아무 문제 없어요.
+     - 미처 못 붙여서 시가 다 떨어지면, 사이트는 1번 시부터 다시 보여줘요.
+     - 그 뒤에 새 시를 붙일 때는, 새 시 바로 위에 이런 한 줄을 먼저 적어 주세요.
+            이어서(2027, 3, 10)
+       "이 아래 시들은 2027년 3월 10일부터 나와요"라는 뜻이에요.
+       날짜는 '시를 붙이는 날의 다음 날'로 적어요.
+       (preview.html 맨 위에 그대로 베껴 쓸 수 있는 줄이 나와요)
+       이 줄이 있어야, 다시 보여준 날들의 시가 바뀌지 않고 그대로 남아요.
+     - 시가 떨어진 적이 없으면 이 줄은 필요 없어요.
 
    ■ 실수하기 쉬운 것
      - 시의 맨 끝을 닫는 ` 를 빠뜨리지 마세요.
@@ -62,8 +79,7 @@
      빠진 칸이 있으면 그 시 위에 빨간 글씨로 알려 줘요.
 
    ■ 알아 두면 좋은 점
-     - 날마다 목록의 순서대로 한 편씩 돌아가며 나와요.
-       시를 추가하거나 빼면 날짜별로 나오는 시의 차례가 바뀌어요.
+     - 시마다 나오는 날짜는 preview.html에서 볼 수 있어요.
      - 다른 사람의 시를 실을 때는 저작권을 꼭 확인하세요.
        (시인이 세상을 떠난 지 70년이 지나지 않은 작품은 허락이 필요할 수 있어요)
    ───────────────────────────────────────────────────────────── */
@@ -550,4 +566,48 @@ function 시(조각) {
   if (경고.length) 편.warnings = 경고;   // preview.html이 빨간 글씨로 알려 줘요
   (시.목록 = 시.목록 || []).push(편);
 }
+// 이어서(2027, 3, 10): 이 줄 아래에 붙인 시들은 이 날짜부터 나와요 (시가 떨어졌다가 다시 채울 때만 써요)
+function 이어서(년, 월, 일) {
+  (시.이어서 = 시.이어서 || []).push({ at: (시.목록 || []).length, day: Date.UTC(년, 월 - 1, 일) });
+}
 const POEMS = 시.목록 || [];
+
+/* ── 날짜마다 어떤 시가 나오는지 정해요 (index.html과 preview.html이 함께 써요) ──
+   · 첫날(2026-11-22)부터 하루에 한 편씩 목록 순서대로 나와요.
+   · 시가 다 떨어지면 1번부터 다시 보여줘요. (다시 보여주는 차례는 끊기지 않고 이어져요)
+   · 이어서(…) 줄 아래의 시는 그 날짜부터 나와요. 그 사이 빈 날은 다시 보여주기로 채워요.
+   새 시를 맨 뒤에만 붙이면, 이미 지나간 날의 시는 절대 바뀌지 않아요. */
+const POEM_START = Date.UTC(2026, 10, 22);   // 첫날: 2026년 11월 22일 (월은 0부터 세서 10 = 11월)
+const POEM_DAY = 86400000;
+function poemPlan() {
+  var 끊김 = (시.이어서 || []).slice().sort(function (x, y) { return x.at - y.at; });
+  var 묶음 = [], 앞 = 0, 날 = 0;
+  끊김.forEach(function (k) {
+    묶음.push({ a: 앞, b: k.at, day: 날 });
+    앞 = k.at; 날 = Math.round((k.day - POEM_START) / POEM_DAY);
+  });
+  묶음.push({ a: 앞, b: POEMS.length, day: 날 });
+  // rows: from날부터 to날 전까지. kind "poem" = first번 시부터 차례대로, "repeat" = 앞의 pool편을 다시
+  var rows = [], pos = 0, rep = 0;
+  묶음.forEach(function (m) {
+    var start = Math.max(pos, m.day);
+    if (start > pos && m.a > 0) { rows.push({ from: pos, to: start, kind: "repeat", first: rep, pool: m.a }); rep += start - pos; }
+    pos = start;
+    if (m.b > m.a) { rows.push({ from: pos, to: pos + m.b - m.a, kind: "poem", first: m.a }); pos += m.b - m.a; }
+  });
+  return { rows: rows, end: pos, rep: rep };   // end: 시가 떨어지는 날 (첫날부터 며칠째)
+}
+// 날짜 → 첫날부터 며칠째인지
+function poemDayNum(d) { return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - POEM_START) / POEM_DAY); }
+// 며칠째 → 첫날부터 날짜
+function poemDateOf(n) { var u = new Date(POEM_START + n * POEM_DAY); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); }
+// 날짜 → { idx: 시 번호(0부터), repeat: 다시 보여주는 날이면 true }
+function poemOn(d) {
+  var n = poemDayNum(d), plan = poemPlan();
+  if (n < 0) return { idx: 0, repeat: false };   // 첫날 전(컴퓨터 날짜가 틀린 경우 등)은 1번 시
+  for (var i = 0; i < plan.rows.length; i++) {
+    var r = plan.rows[i];
+    if (n >= r.from && n < r.to) return r.kind === "poem" ? { idx: r.first + n - r.from, repeat: false } : { idx: (r.first + n - r.from) % r.pool, repeat: true };
+  }
+  return { idx: (plan.rep + n - plan.end) % POEMS.length, repeat: true };   // 시가 다 떨어진 뒤: 1번부터 다시
+}
