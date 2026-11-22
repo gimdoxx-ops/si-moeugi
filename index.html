@@ -600,13 +600,13 @@ function renderTomorrow(){
 }
 
 // 시 아래 '내 주머니에 넣을까요?' 자리 — 네 가지 모습 중 하나를 보여줘요
+// 내 주머니에는 [넣을게요](또는 작은 [주머니에 넣기])를 누른 시만 들어가요. 시를 열기만 해서는 들어가지 않아요.
 function renderAsk(){
   const k = keyOf(POEMS[current]), box = $("ask");
   if (favs.includes(k)) {
-    // 넣어 둔 시: 방금 넣었으면 "넣었어요", 전에 넣었으면 "들어 있어요" + 작은 [꺼내기]
+    // 넣어 둔 시: "내 주머니에 넣었어요" + 작은 [주머니에서 빼기]
     box.className = "ask done";
-    box.innerHTML = '<p class="ask-msg">' + (justAdded === k ? "주머니에 넣었어요" : "주머니에 들어 있어요") +
-      '</p><button class="link" data-act="out">꺼내기</button>';
+    box.innerHTML = '<p class="ask-msg">내 주머니에 넣었어요</p><button class="link" data-act="out">주머니에서 빼기</button>';
   } else if (skipped.has(k)) {
     // [그냥 둘게요]를 누른 시: 질문은 접고 작은 글자 버튼만
     box.className = "ask quiet";
