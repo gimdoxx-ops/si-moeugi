@@ -104,6 +104,8 @@ header{text-align:center; padding-top:8px}
 .author{display:block; margin-top:10px; color:var(--letter-soft); font-size:.98rem; line-height:1.5}
 .body{
   font-size:clamp(1rem,4vw,1.12rem); line-height:2; white-space:pre-line; margin:0;
+  /* 긴 줄이 폰에서 넘칠 때 낱말 중간이 아니라 띄어쓰기 자리에서 꺾이게 (아주 긴 낱말만 예외) */
+  word-break:keep-all; overflow-wrap:anywhere;
   /* 아주 옅은 가로 줄: 본문에만, 글줄마다 한 줄씩 (줄 간격 2em에 맞춤) */
   background:repeating-linear-gradient(to bottom, transparent 0 calc(2em - 1px), var(--rule) calc(2em - 1px) 2em);
 }
@@ -263,7 +265,6 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
   <!-- 맨 아래 짧은 안내 -->
   <footer class="site-foot">
     <ul>
-      <li>시 주머니는 저작권 보호 기간이 끝난 작품을 활용합니다.</li>
       <li>내 주머니와 내 생각은 이 기기의 이 브라우저에만 저장됩니다.<br>방문 기록을 지우거나 기기를 바꾸면 사라질 수 있어요.</li>
       <!-- ▼ 문의 연락처: 주소를 바꾸려면 아래 줄의 메일 주소 두 군데(mailto: 뒤와 글자)를 함께 고치세요. -->
       <li id="contact">문의사항은 <a href="mailto:dokuer@naver.com">dokuer@naver.com</a>로 연락 부탁드립니다.</li>
@@ -290,8 +291,11 @@ const keyOf = p => p.title + "|" + p.author;
 function loadFavs(){
   let a = [];
   try { a = JSON.parse(localStorage.getItem("favs") || "[]"); } catch(e){}
-  // 예전에는 '몇 번째 시'라는 숫자로 저장했어요 → 제목|시인으로 바꿔 둡니다
-  return a.map(x => typeof x === "number" ? (POEMS[x] ? keyOf(POEMS[x]) : null) : x).filter(Boolean);
+  // 예전에는 '몇 번째 시'라는 숫자로 저장했어요 → 그때 목록(아래 4편) 기준으로 제목|시인으로 바꿔 둡니다
+  // (지금 목록의 같은 번호로 바꾸면 엉뚱한 시가 주머니에 들어가요. 지금 목록에 없는 시는 화면에서 건너뛰어요)
+  const OLD = ["서시|윤동주", "진달래꽃|김소월", "엄마야 누나야|김소월", "새로운 길|윤동주"];
+  if (!Array.isArray(a)) a = [];
+  return [...new Set(a.map(x => typeof x === "number" ? (OLD[x] || null) : (typeof x === "string" ? x : null)).filter(Boolean))];
 }
 function saveFavs(a){ try { localStorage.setItem("favs", JSON.stringify(a)); } catch(e){} }
 let favs = loadFavs(); saveFavs(favs);
