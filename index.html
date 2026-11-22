@@ -30,13 +30,13 @@
 <style>
 :root{
   --paper:#e8e6dc; --paper2:#dedbd0; --ink:#242a33; --soft:#5d6470; --line:#b9b6a8; --btn-line:var(--line); --seal:#a63a32;
-  --grain:.07; box-sizing:border-box;
+  --grain:.07; --ul:rgba(93,100,112,.45); box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){--paper:#1f2227; --paper2:#262a30; --ink:#e4e2d9; --soft:#9aa0a8; --line:#3a3f47; --btn-line:#5b616b; --seal:#c95b52; --grain:.12}
+  :root:not([data-theme="light"]){--paper:#1f2227; --paper2:#262a30; --ink:#e4e2d9; --soft:#9aa0a8; --line:#3a3f47; --btn-line:#5b616b; --seal:#c95b52; --grain:.12; --ul:rgba(154,160,168,.5)}
 }
-:root[data-theme="dark"]{--paper:#1f2227; --paper2:#262a30; --ink:#e4e2d9; --soft:#9aa0a8; --line:#3a3f47; --btn-line:#5b616b; --seal:#c95b52; --grain:.12}
+:root[data-theme="dark"]{--paper:#1f2227; --paper2:#262a30; --ink:#e4e2d9; --soft:#9aa0a8; --line:#3a3f47; --btn-line:#5b616b; --seal:#c95b52; --grain:.12; --ul:rgba(154,160,168,.5)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
@@ -59,6 +59,7 @@ header{text-align:center; padding-top:8px}
 .from{margin:0 0 6px; color:var(--soft); font-size:.88rem; letter-spacing:.04em}
 .date{margin:8px 0 0; color:var(--soft); font-size:clamp(1.1rem,4.8vw,1.3rem); letter-spacing:.04em}
 .mood{margin:4px 0 0; color:var(--soft); opacity:.75; font-size:.88rem; line-height:1.7; letter-spacing:.04em; word-break:keep-all}   /* 날짜 아래 안내 두 줄 */
+.mood .ul{text-decoration:underline; text-decoration-color:var(--ul); text-decoration-thickness:1px; text-underline-offset:5px}   /* "하루에 한 편, 새로운 시"에만 은은한 밑줄 */
 .opened .mood{display:none}                     /* 편지지를 연 뒤(시 읽는 화면)에는 숨기고, 주머니 화면에서만 보여요 */
 /* ── 내 생각 적기 (평소엔 접혀 있어요) ── */
 .memo{margin-top:16px}
@@ -120,7 +121,7 @@ header{text-align:center; padding-top:8px}
 @media (max-width:480px){
   .poem{padding-left:7.3%; padding-right:7.3%}
 }
-/* 주머니 속 한마디: 편지지 바로 아래, 한지 바탕 위에 작은 글씨 + 왼쪽 얇은 붉은 선 */
+/* 추신: 편지지 바로 아래, 한지 바탕 위에 작은 글씨 + 왼쪽 얇은 붉은 선 */
 .note{margin-top:22px; padding:2px 0 0 16px; border-left:2px solid var(--seal); color:var(--soft); font-size:.92rem; line-height:1.85}
 .note h2{margin:0 0 12px; font-size:1rem; font-weight:700; color:var(--ink); letter-spacing:.04em}
 .note p{margin:0 0 .8em; max-width:34em}
@@ -149,6 +150,7 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 .saved li button span{color:var(--soft)}
 /* ── 내 기록: 날짜별로 적은 '내 생각'을 다시 보는 작은 달력 (처음엔 접혀 있어요) ── */
 .diary{margin-top:40px; border-top:1px solid var(--line); padding-top:6px}
+.memo:not([hidden]) + .diary{margin-top:2px; border-top:0; padding-top:0}   /* 내 생각 적기 바로 아래에 붙여서 한 묶음처럼 */
 .diary > summary{display:flex; align-items:center; gap:6px; min-height:48px; color:var(--soft); font-size:.98rem; cursor:pointer; list-style:none}
 .diary > summary::-webkit-details-marker{display:none}
 .diary > summary:hover{color:var(--ink)}
@@ -184,6 +186,8 @@ summary:hover .fold{color:var(--ink)}
 .tomorrow button.link{font-size:inherit; letter-spacing:inherit; color:inherit; padding:4px 0}   /* [내일 시 제목 살짝 보기]: 작은 글씨 버튼 */
 .tomorrow button.link:hover{color:var(--ink)}
 .tm-peek{display:inline-flex; align-items:center; min-height:36px}   /* 버튼과 같은 높이라 나타날 때 아래 글이 들썩이지 않아요 */
+.tomorrow button.tm-peek{border:0; background:none; padding:4px 0; font:inherit; letter-spacing:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent}   /* 다시 누르면 숨겨요 */
+.tomorrow button.tm-peek:hover{color:var(--ink)}
 .dv-memo label{display:block; color:var(--soft); font-size:.92rem}
 .old{margin-top:22px; color:var(--soft); font-size:.92rem}
 .old-h{margin:0}
@@ -275,7 +279,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
     <h1 class="site"><a href="#" id="home" class="home" title="처음 화면으로"><img src="title.webp" alt="시 주머니 (pocket poem)" width="1000" height="329" decoding="async"></a></h1>
     <p class="date" id="date"></p>
     <!-- 날짜 아래 안내 두 줄 (문장을 바꾸고 싶으면 여기 글자만 고치면 돼요) -->
-    <p class="mood" id="mood">하루에 한 편, 새로운 시를 꺼내보세요.<br>마음에 닿은 시는 주머니에 넣어두세요.</p>
+    <p class="mood" id="mood"><span class="ul">하루에 한 편, 새로운 시</span>를 꺼내보세요.<br>마음에 닿은 시는 주머니에 넣어두세요.</p>
   </header>
 
 <!-- 가죽 주머니 (하루 첫 방문 때만 닫혀 있어요) -->
@@ -305,12 +309,12 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
       <p class="body" id="text"></p>
     </article>
   </div>
-  <!-- 주머니 속 한마디: 편지지 바로 아래 -->
-  <section class="note" id="note" aria-label="주머니 속 한마디"></section>
+  <!-- 추신: 편지지 바로 아래 -->
+  <section class="note" id="note" aria-label="추신"></section>
+  <!-- 내일 시 제목만 살짝 (오늘의 시를 볼 때만 보여요. 본 문장을 다시 누르면 다시 숨겨요) -->
+  <p class="tomorrow" id="tomorrow"></p>
   <!-- 이 시를 내 주머니에 넣을까요? (상태에 따라 내용이 바뀌어요) -->
   <section class="ask" id="ask" aria-live="polite"></section>
-  <!-- 내일 시 제목만 살짝 (오늘의 시를 볼 때만 보여요. 눌러도 아무 일 없어요) -->
-  <p class="tomorrow" id="tomorrow"></p>
   <!-- 내 생각 적기: 그날그날 일기처럼, 이 브라우저에 저장돼요 (오늘의 시를 볼 때만 보여요) -->
   <details class="memo" id="memo" open>
     <summary><span>내 생각 적기</span><span class="fold" aria-hidden="true">접기</span></summary>
@@ -338,7 +342,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
           <p class="body" id="dvText"></p>
         </article>
       </div>
-      <section class="note" id="dvNote" aria-label="주머니 속 한마디"></section>
+      <section class="note" id="dvNote" aria-label="추신"></section>
       <div class="memo dv-memo">
         <label for="dvMemo">내가 적은 글</label>
         <textarea id="dvMemo" rows="4" maxlength="1000"></textarea>
@@ -370,7 +374,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
 </main>
 <!-- 시 목록은 poems.js 파일에 따로 있어요 (새 시 추가·수정은 그 파일에서) -->
 <!-- ?v= 뒤 숫자: 폰(특히 아이폰 Safari)이 예전 poems.js를 붙잡고 있지 않게, index.html과 poems.js를 함께 고칠 때 바꿔요 -->
-<script src="poems.js?v=20261122b"></script>
+<script src="poems.js?v=20261122c"></script>
 <script>
 // poems.js를 못 읽었으면(파일이 없거나 쉼표·따옴표가 빠졌을 때) 안내 문구를 보여줘요
 if (typeof POEMS === "undefined" || !Array.isArray(POEMS) || POEMS.length === 0) {
@@ -547,18 +551,18 @@ function renderCal(){
 $("calPrev").onclick = () => { if (--cal.m < 0) { cal.m = 11; cal.y--; } renderCal(); };
 $("calNext").onclick = () => { if (++cal.m > 11) { cal.m = 0; cal.y++; } renderCal(); };
 
-// 펼친 날: 편지지 모양의 시 + 주머니 속 한마디 + 고칠 수 있는(또는 새로 적을 수 있는) 글
+// 펼친 날: 편지지 모양의 시 + 추신 + 고칠 수 있는(또는 새로 적을 수 있는) 글
 function showDay(label, poem, text, save){
   const p = poem || {};
   $("dvDate").textContent = label;
   $("dvTitle").textContent = p.title || "(시를 찾지 못했어요)";
   $("dvAuthor").textContent = p.author || "";
-  // 한마디: 저장된 시에 한마디가 없으면(예전 기록) 지금 시 목록에서 같은 시를 찾아 보여줘요
+  // 추신: 저장된 시에 추신이 없으면(예전 기록) 지금 시 목록에서 같은 시를 찾아 보여줘요
   const same = POEMS.find(q => keyOf(q) === keyOf(p));
   setPoemText($("dvText"), p.text || "", same || p);   // 산문시 표시는 지금 시 목록을 따라요
   const note = Array.isArray(p.note) && p.note.length ? p.note : (same ? same.note : []);
   $("dvNote").hidden = note.length === 0;
-  $("dvNote").innerHTML = "<h2>주머니 속 한마디</h2>" + note.map(t => "<p>" + t + "</p>").join("");
+  $("dvNote").innerHTML = "<h2>추신</h2>" + note.map(t => "<p>" + t + "</p>").join("");
   $("dvMemo").value = text || "";
   $("dvStatus").className = "memo-status"; $("dvStatus").textContent = "";
   daySave = save;
@@ -611,7 +615,7 @@ function render(){
   $("title").textContent = p.title;
   $("author").textContent = p.author;
   setPoemText($("text"), p.text, p);
-  $("note").innerHTML = "<h2>주머니 속 한마디</h2>" + p.note.map(t => "<p>" + t + "</p>").join("");
+  $("note").innerHTML = "<h2>추신</h2>" + p.note.map(t => "<p>" + t + "</p>").join("");
   // 내일 시는 제목만 살짝: 오늘의 시를 볼 때만 (내 주머니에서 다른 시를 꺼내 볼 때는 숨겨요)
   renderTomorrow();
   $("tomorrow").hidden = current !== todayIdx;
@@ -622,21 +626,23 @@ function render(){
   renderSaved();
 }
 
-// 내일 시 제목: 처음엔 숨기고 작은 [내일 시 제목 살짝 보기] 버튼만. 누른 사람에게만 제목을 보여줘요 (시인·본문·한마디는 안 보여요)
-let peeked = false;                   // 이번에 머무는 동안 한 번 보면 계속 보여요
+// 내일 시 제목: 처음엔 숨기고 작은 [내일 시 제목 살짝 보기] 버튼만. 누른 사람에게만 제목을 보여줘요 (시인·본문·추신은 안 보여요)
+let peeked = false;                   // 이번에 머무는 동안 한 번 보면 계속 보여요 (그 문장을 다시 누르면 다시 숨겨요)
 function renderTomorrow(){
   const box = $("tomorrow");
   box.textContent = "";
   if (peeked) {
-    const s = document.createElement("span"); s.className = "tm-peek";
+    const s = document.createElement("button"); s.type = "button"; s.className = "tm-peek";
     const t = POEMS[tomorrowIdx].title, c = t.trim().slice(-1).charCodeAt(0) - 0xAC00;
     // 제목 끝 글자에 받침이 있으면 "이", 없으면 "가", 한글이 아닌 글자로 끝나면 "이/가"
     const josa = c >= 0 && c <= 11171 ? (c % 28 ? "이" : "가") : "이/가";
     s.textContent = "내일 주머니에는 「" + t + "」" + josa + " 들어 있어요.";
+    s.setAttribute("aria-label", s.textContent + " 누르면 다시 숨겨요");
+    s.onclick = () => { peeked = false; renderTomorrow(); const b = box.querySelector("button"); if (b) b.focus({preventScroll:true, focusVisible:false}); };
     box.appendChild(s);
   } else {
     const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "내일 시 제목 살짝 보기";
-    b.onclick = () => { peeked = true; renderTomorrow(); box.setAttribute("tabindex", "-1"); box.focus({preventScroll:true}); };
+    b.onclick = () => { peeked = true; renderTomorrow(); const t = box.querySelector("button"); if (t) t.focus({preventScroll:true, focusVisible:false}); };
     box.appendChild(b);
   }
 }
