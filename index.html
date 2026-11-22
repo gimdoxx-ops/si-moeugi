@@ -104,7 +104,7 @@ header{text-align:center; padding-top:8px}
 #title:focus{outline:none}
 .author{display:block; margin-top:10px; color:var(--letter-soft); font-size:.98rem; line-height:1.5}
 .body{
-  /* --fs: [글자 작게] 표시한 시만 좁은 화면에서 1 → 최소 .9 (fitPoemText가 정해요). 줄 간격·가로 줄은 em이라 함께 줄어요 */
+  /* --fs: 가장 긴 줄이 한 줄로 들어가도록 1 → 최소 .8 (poems.js의 fitPoemText가 정해요). 줄 간격·가로 줄은 em이라 함께 줄어요 */
   font-size:calc(clamp(1rem,4vw,1.12rem) * var(--fs,1)); line-height:2; margin:0;
   /* 긴 줄이 폰에서 넘칠 때 낱말 중간이 아니라 띄어쓰기 자리에서 꺾이게 (아주 긴 낱말만 예외) */
   word-break:keep-all; overflow-wrap:anywhere;
@@ -112,7 +112,7 @@ header{text-align:center; padding-top:8px}
 /* 편지지 가로 줄: 공책처럼 본문 바탕에 일정한 간격(= 줄 간격 2em)으로 깔아요
    · 글줄 하나의 높이가 정확히 2em이라, 시인이 바꾼 줄·화면 폭 때문에 꺾인 줄 모두 줄 위에 앉아요
    · 연 사이 빈 줄도 딱 한 칸(2em)이라 간격이 어긋나지 않아요
-   · [글자 작게]로 글자가 줄면 em도 같이 줄어서 줄 간격이 그대로 맞아요 */
+   · 글자를 자동으로 줄이면 em도 같이 줄어서 줄 간격이 그대로 맞아요 */
 .body{background:repeating-linear-gradient(to bottom, transparent 0 calc(2em - 1px), var(--rule) calc(2em - 1px) 2em)}
 /* 시의 한 줄(.ln): 꺾인 부분만 살짝 들여 써요(내어쓰기). 빈 줄도 한 칸 높이 */
 .body .ln{display:block; min-height:2em; padding-left:1.5em; text-indent:-1.5em}
@@ -404,34 +404,22 @@ function fmtDate(d){
 $("date").textContent = fmtDate(today);
 
 // 시 본문을 줄마다 한 덩어리(.ln)로 넣어요. 빈 줄은 연과 연 사이예요.
-// opts: poems.js의 [산문시] → prose, [글자 작게] → small
+// opts: poems.js의 [산문시] → prose
 function setPoemText(el, text, opts){
   const o = opts || {};
   el.textContent = "";
   el.classList.toggle("prose", !!o.prose);
-  el.dataset.small = o.small && !o.prose ? "1" : "";
   el.dataset.fitW = "";
   String(text).split("\n").forEach(line => {
     const s = document.createElement("span"); s.className = "ln"; s.textContent = line; el.appendChild(s);
   });
   fitPoemText(el);
 }
-// [글자 작게] 시: 꺾이는 줄이 없어질 때까지 글자를 2.5%씩 줄여요 (원래 크기의 90%까지만)
-function fitPoemText(el){
-  el.style.removeProperty("--fs");
-  if (!el.dataset.small || !el.offsetWidth) return;      // 화면에 안 보일 때는 보일 때 다시 맞춰요
-  el.dataset.fitW = el.offsetWidth;
-  const lines = [...el.children];
-  const wraps = () => { const lh = parseFloat(getComputedStyle(el).lineHeight); return lines.some(l => l.offsetHeight > lh * 1.5); };
-  for (const f of [1, .975, .95, .925, .9]) {
-    el.style.setProperty("--fs", f);
-    if (!wraps()) break;
-  }
-}
+// 글자 크기 맞추기(fitPoemText)는 poems.js 맨 아래에 있어요 (preview.html과 똑같이 쓰려고)
 // 화면 폭이 바뀌거나(폰을 돌릴 때), 숨어 있던 편지지가 보이게 되면 다시 맞춰요
 const fitWatch = new ResizeObserver(es => es.forEach(e => {
   const el = e.target;
-  if (el.dataset.small && el.offsetWidth && String(el.offsetWidth) !== el.dataset.fitW) fitPoemText(el);
+  if (el.clientWidth && String(el.clientWidth) !== el.dataset.fitW) fitPoemText(el);
 }));
 ["text", "dvText"].forEach(id => fitWatch.observe($(id)));
 // 나눔명조 글꼴이 늦게 도착하면 글자 폭이 달라지니 한 번 더 맞춰요
@@ -548,7 +536,7 @@ function showDay(label, poem, text, save){
   $("dvAuthor").textContent = p.author || "";
   // 한마디: 저장된 시에 한마디가 없으면(예전 기록) 지금 시 목록에서 같은 시를 찾아 보여줘요
   const same = POEMS.find(q => keyOf(q) === keyOf(p));
-  setPoemText($("dvText"), p.text || "", same || p);   // 산문시·글자 작게 표시는 지금 시 목록을 따라요
+  setPoemText($("dvText"), p.text || "", same || p);   // 산문시 표시는 지금 시 목록을 따라요
   const note = Array.isArray(p.note) && p.note.length ? p.note : (same ? same.note : []);
   $("dvNote").hidden = note.length === 0;
   $("dvNote").innerHTML = "<h2>주머니 속 한마디</h2>" + note.map(t => "<p>" + t + "</p>").join("");

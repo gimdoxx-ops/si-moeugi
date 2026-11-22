@@ -71,13 +71,10 @@
        (긴 줄이 꺾일 때 살짝 들여 쓰는 것도 하지 않아요)
      - 시 본문의 글자와 줄바꿈은 그대로예요. 빈 줄을 두면 문단이 나뉘어요.
 
-   ■ 글자 작게 표시 (필요한 시에만)
-     - 긴 줄이 많아서 폰에서 자꾸 꺾이는 시는, [시인] 줄 바로 아래에
-            [글자 작게]
-       한 줄만 적어 주세요.
-     - 폰처럼 좁은 화면에서 줄이 꺾일 때만, 덜 꺾이도록 본문 글자를
-       조금(가장 작아도 원래의 90%까지만) 줄여요. 넓은 화면에서는 그대로예요.
-     - 줄 간격과 편지지 가로 줄도 글자 크기에 맞춰 함께 줄어요.
+   ■ 본문 글자 크기는 저절로 맞춰져요
+     - 시의 가장 긴 줄이 화면에서 한 줄로 들어가도록, 본문 글자를 알아서 줄여요.
+       (가장 작아도 원래 크기의 80%까지만. 그래도 안 들어가는 줄만 꺾여요)
+     - 따로 표시할 것은 없어요. 산문시는 줄이지 않아요.
 
    ■ 실수하기 쉬운 것
      - 시의 맨 끝을 닫는 ` 를 빠뜨리지 마세요.
@@ -257,7 +254,6 @@
 시`
 [제목] 내가 쓴 것
 [시인] 유하
-[글자 작게]
 
 [본문]
 노을이 드리우는 아파트 숲,
@@ -321,7 +317,6 @@
 시`
 [제목] 복도
 [시인] 김혜연
-[글자 작게]
 
 [본문]
 진학상담실 앞 엄마는
@@ -551,7 +546,7 @@ function 시(조각) {
   var 칸 = { "제목": "title", "시인": "author", "본문": "text", "주머니 속 한마디": "note", "한마디": "note" };
   var 글 = 조각.raw[0];
   for (var i = 1; i < arguments.length; i++) 글 += String(arguments[i]) + 조각.raw[i];
-  var 표시 = { "산문시": "prose", "글자 작게": "small" };   // [산문시] [글자 작게]: 내용 없이 표시만 하는 줄
+  var 표시 = { "산문시": "prose" };   // [산문시]: 내용 없이 표시만 하는 줄
   var 모음 = {}, 지금 = null, 경고 = [], 켬 = {};
   글.replace(/\r/g, "").split("\n").forEach(function (줄) {
     var m = 줄.match(/^\s*\[\s*([^\]]+?)\s*\]\s*(.*)$/);
@@ -589,7 +584,6 @@ function 시(조각) {
     }) : []
   };
   if (켬.prose) 편.prose = true;        // 산문시: 문단처럼 양쪽 맞춤
-  if (켬.small) 편.small = true;        // 글자 작게: 좁은 화면에서 꺾이면 최대 90%까지 줄여요
   if (경고.length) 편.warnings = 경고;   // preview.html이 빨간 글씨로 알려 줘요
   (시.목록 = 시.목록 || []).push(편);
 }
@@ -637,4 +631,35 @@ function poemOn(d) {
     if (n >= r.from && n < r.to) return r.kind === "poem" ? { idx: r.first + n - r.from, repeat: false } : { idx: (r.first + n - r.from) % r.pool, repeat: true };
   }
   return { idx: (plan.rep + n - plan.end) % POEMS.length, repeat: true };   // 시가 다 떨어진 뒤: 1번부터 다시
+}
+
+/* ── 편지지 본문 글자 크기 맞추기 (index.html과 preview.html이 함께 써요) ──
+   · 그 시의 가장 긴 줄이 한 줄로 들어가도록 글자를 줄여요. 가장 작아도 80%까지만.
+   · 80%로도 안 들어가는 줄만 꺾이고, 꺾인 부분은 살짝 들여 써요.
+   · 줄 간격·가로 줄은 em이라 글자 크기와 함께 줄어요. 산문시는 줄이지 않아요.
+   · 줄인 비율은 el.dataset.fs에 적어 둬요 (예: "0.91") */
+var POEM_FS_MIN = 0.8;
+function fitPoemText(el) {
+  el.style.removeProperty("--fs");
+  el.dataset.fs = "1";
+  if (el.classList.contains("prose") || !el.clientWidth) return;   // 산문시, 또는 화면에 안 보일 때(보일 때 다시 맞춰요)
+  el.dataset.fitW = el.clientWidth;
+  var lines = [].slice.call(el.children), avail = el.clientWidth, maxW = 0;
+  // 1) 줄을 꺾지 않았을 때 가장 긴 줄의 폭을 재요
+  el.style.whiteSpace = "nowrap";
+  lines.forEach(function (l) {
+    var r = document.createRange(); r.selectNodeContents(l);
+    maxW = Math.max(maxW, r.getBoundingClientRect().width);
+  });
+  el.style.whiteSpace = "";
+  if (maxW <= avail) return;                                        // 다 들어가면 그대로(100%)
+  // 2) 들어갈 만큼 줄이고(0.5% 단위), 그래도 꺾이면 0.5%씩 더 줄여요
+  var f = Math.max(POEM_FS_MIN, Math.floor(avail / maxW * 200) / 200);
+  function wraps() {
+    var lh = parseFloat(getComputedStyle(el).lineHeight);
+    return lines.some(function (l) { return l.offsetHeight > lh * 1.5; });
+  }
+  el.style.setProperty("--fs", f);
+  while (f > POEM_FS_MIN && wraps()) { f = Math.max(POEM_FS_MIN, Math.round((f - 0.005) * 1000) / 1000); el.style.setProperty("--fs", f); }
+  el.dataset.fs = String(f);
 }
