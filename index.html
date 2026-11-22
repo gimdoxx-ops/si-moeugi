@@ -160,12 +160,15 @@ button:disabled{opacity:.35; cursor:default; border-color:var(--line)}
 .cal-day.has::after{background:var(--seal)}
 .cal-day.has:hover .num{background:var(--paper2)}
 .cal-day.today .num{box-shadow:inset 0 0 0 1px var(--btn-line)}   /* 오늘: 옅은 동그라미 */
-.cal-day.future{opacity:.4}
+.cal-day.can{color:var(--ink); cursor:pointer}   /* 그날의 시를 다시 볼 수 있는 날 */
+.cal-day.can:hover .num{background:var(--paper2)}
+.cal-day.off{opacity:.4}                          /* 사이트를 열기 전 날짜·미래 날짜: 흐리게, 눌러도 아무 일 없어요 */
 .cal-day.sel .num{background:var(--paper2); color:var(--seal); font-weight:700}   /* 지금 펼쳐 본 날 */
 .cal-foot{margin:14px 0 4px; text-align:center; color:var(--soft); opacity:.8; font-size:.78rem}
 .dv{margin-top:18px}
 .dv-date{margin:0; text-align:center; color:var(--soft); font-size:.88rem; letter-spacing:.04em}
 .dv .letter{margin-top:8px}
+.tomorrow{margin:20px 0 0; color:var(--soft); opacity:.7; font-size:.8rem; letter-spacing:.03em}   /* 내일 시 제목: 작고 연하게 */
 .dv-memo label{display:block; color:var(--soft); font-size:.92rem}
 .old{margin-top:22px; color:var(--soft); font-size:.92rem}
 .old-h{margin:0}
@@ -235,7 +238,7 @@ html:not(.opened) #content{display:none}
   .open .pouch-wrap{animation:none}
   @keyframes breathe{50%{transform:scale(1.02,1.015)}}
   .rising .letter{animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
-  .rising .bar,.rising .note{animation:set .8s ease-out both}
+  .rising .bar,.rising .note,.rising .tomorrow{animation:set .8s ease-out both}
   @keyframes rise{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
 }
 </style>
@@ -285,6 +288,8 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
   </div>
   <!-- 주머니 속 한마디: 편지지 바로 아래 -->
   <section class="note" id="note" aria-label="주머니 속 한마디"></section>
+  <!-- 내일 시 제목만 살짝 (오늘의 시를 볼 때만 보여요. 눌러도 아무 일 없어요) -->
+  <p class="tomorrow" id="tomorrow"></p>
   <!-- 내 생각 적기: 그날그날 일기처럼, 이 브라우저에 저장돼요 (오늘의 시를 볼 때만 보여요) -->
   <details class="memo" id="memo">
     <summary>내 생각 적기</summary>
@@ -318,6 +323,7 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentEle
           <p class="body" id="dvText"></p>
         </article>
       </div>
+      <section class="note" id="dvNote" aria-label="주머니 속 한마디"></section>
       <div class="memo dv-memo">
         <label for="dvMemo">내가 적은 글</label>
         <textarea id="dvMemo" rows="4" maxlength="1000"></textarea>
@@ -355,6 +361,9 @@ const DAY = 86400000;
 const today = new Date();
 const base = Math.floor(new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / DAY);
 const todayIdx = ((base % POEMS.length) + POEMS.length) % POEMS.length;   // 오늘의 시 (날마다 목록 순서대로 한 편)
+// 아무 날짜의 시 번호 (오늘의 시와 똑같은 방법으로 계산해요)
+const idxOf = d => { const b = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / DAY); return ((b % POEMS.length) + POEMS.length) % POEMS.length; };
+const tomorrowIdx = idxOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
 let current = todayIdx;               // 지금 화면에 보이는 시 (내 주머니에서 다른 시를 꺼내 볼 수도 있어요)
 // 내 주머니: 이 브라우저에만 저장돼요. 시를 '제목|시인'으로 기억해서, poems.js에 시를 추가해도 헷갈리지 않아요.
 const keyOf = p => p.title + "|" + p.author;
@@ -399,7 +408,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) upda
 // 예전(시마다 저장하던 때)의 'memos'는 지우지 않고, 내 기록 아래 '날짜 없는 예전 글'로 보여줘요.
 const dayKey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const todayKey = dayKey(today);
-const snap = p => ({ title: p.title, author: p.author, text: p.text });
+const snap = p => ({ title: p.title, author: p.author, text: p.text, note: p.note });
 function readStore(name){
   try { const v = JSON.parse(localStorage.getItem(name) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
   catch(e){ return {}; }
@@ -449,6 +458,7 @@ autosave($("memoText"), $("memoStatus"), () => t => saveDay(todayKey, t, snap(PO
 
 // ── 내 기록: 한 달 달력 ──
 const cal = { y: today.getFullYear(), m: today.getMonth() };   // 지금 보고 있는 달
+const START_DAY = "2026-11-22";   // 사이트를 연 날: 이날부터 지난 시를 다시 볼 수 있어요
 let openDay = null;            // 달력에서 펼친 날 ('2026-11-20') 또는 예전 글 ('old:제목|시인')
 let daySave = null;            // 펼친 글을 고치면 어디에 저장할지
 function renderCal(){
@@ -463,13 +473,15 @@ function renderCal(){
   for (let i = 0; i < first; i++) grid.appendChild(document.createElement("span"));
   for (let d = 1; d <= last; d++) {
     const k = dayKey(new Date(cal.y, cal.m, d)), has = textOf(diary[k]).trim() !== "";
-    // 글을 적은 날만 누를 수 있는 버튼, 나머지 날(점 없는 날·미래)은 그냥 글자예요
-    const el = document.createElement(has ? "button" : "span");
-    el.className = "cal-day" + (has ? " has" : "") + (k === todayKey ? " today" : "") + (k > todayKey ? " future" : "") + (k === openDay ? " sel" : "");
+    // 누를 수 있는 날: 사이트를 연 날(START_DAY)부터 오늘까지, 그리고 글을 적은 날
+    // 그 전 날짜와 미래 날짜는 흐린 글자라서 눌러도 아무 일 없어요
+    const can = has || (k >= START_DAY && k <= todayKey);
+    const el = document.createElement(can ? "button" : "span");
+    el.className = "cal-day" + (can ? " can" : " off") + (has ? " has" : "") + (k === todayKey ? " today" : "") + (k === openDay ? " sel" : "");
     const num = document.createElement("span"); num.className = "num"; num.textContent = d; el.appendChild(num);
-    if (has) {
+    if (can) {
       el.type = "button";
-      el.setAttribute("aria-label", (cal.m + 1) + "월 " + d + "일 기록 보기");
+      el.setAttribute("aria-label", (cal.m + 1) + "월 " + d + "일 시" + (has ? "와 내 글" : "") + " 보기");
       el.onclick = () => openDate(k);
     }
     if (k === todayKey) el.setAttribute("aria-current", "date");
@@ -480,24 +492,32 @@ function renderCal(){
 $("calPrev").onclick = () => { if (--cal.m < 0) { cal.m = 11; cal.y--; } renderCal(); };
 $("calNext").onclick = () => { if (++cal.m > 11) { cal.m = 0; cal.y++; } renderCal(); };
 
-// 펼친 날: 편지지 모양의 시 + 고칠 수 있는 글
+// 펼친 날: 편지지 모양의 시 + 주머니 속 한마디 + 고칠 수 있는(또는 새로 적을 수 있는) 글
 function showDay(label, poem, text, save){
   const p = poem || {};
   $("dvDate").textContent = label;
   $("dvTitle").textContent = p.title || "(시를 찾지 못했어요)";
   $("dvAuthor").textContent = p.author || "";
   $("dvText").textContent = p.text || "";
+  // 한마디: 저장된 시에 한마디가 없으면(예전 기록) 지금 시 목록에서 같은 시를 찾아 보여줘요
+  const same = POEMS.find(q => keyOf(q) === keyOf(p));
+  const note = Array.isArray(p.note) && p.note.length ? p.note : (same ? same.note : []);
+  $("dvNote").hidden = note.length === 0;
+  $("dvNote").innerHTML = "<h2>주머니 속 한마디</h2>" + note.map(t => "<p>" + t + "</p>").join("");
   $("dvMemo").value = text || "";
   $("dvStatus").className = "memo-status"; $("dvStatus").textContent = "";
   daySave = save;
   $("dayView").hidden = false;
   $("dayView").scrollIntoView({ behavior: reduceMotionNow() ? "auto" : "smooth", block: "start" });
 }
+// 글을 적은 날은 저장해 둔 그날의 시를, 안 적은 날은 날짜로 계산한 시를 보여줘요
 function openDate(k){
-  const e = loadDiary()[k]; if (!e) return;
+  const [y, m, d] = k.split("-").map(Number), date = new Date(y, m - 1, d);
+  const e = loadDiary()[k], has = textOf(e).trim() !== "";
+  if (!has && !(k >= START_DAY && k <= todayKey)) return;
+  const poem = has && e.poem ? e.poem : snap(POEMS[idxOf(date)]);
   openDay = k;
-  const [y, m, d] = k.split("-").map(Number);
-  showDay(fmtDate(new Date(y, m - 1, d)) + "의 기록", e.poem, textOf(e), t => saveDay(k, t, e.poem));
+  showDay(fmtDate(date) + "의 시", poem, has ? textOf(e) : "", t => saveDay(k, t, poem));
   renderCal();
 }
 autosave($("dvMemo"), $("dvStatus"), () => daySave);
@@ -537,6 +557,9 @@ function render(){
   $("author").textContent = p.author;
   $("text").textContent = p.text;
   $("note").innerHTML = "<h2>주머니 속 한마디</h2>" + p.note.map(t => "<p>" + t + "</p>").join("");
+  // 내일 시는 제목만 살짝: 오늘의 시를 볼 때만 (내 주머니에서 다른 시를 꺼내 볼 때는 숨겨요)
+  $("tomorrow").textContent = "내일 주머니에는: " + POEMS[tomorrowIdx].title;
+  $("tomorrow").hidden = current !== todayIdx;
   const el = $("poem"); el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   justAdded = null;
   showMemo();
